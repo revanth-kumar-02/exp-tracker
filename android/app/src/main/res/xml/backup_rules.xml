@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Exclude all databases containing financial transaction and card records -->
+    <exclude domain="database" path="." />
+    <!-- Exclude shared preferences containing app lock and secure storage -->
+    <exclude domain="sharedpref" path="." />
+    <!-- Exclude internal storage files -->
+    <exclude domain="file" path="." />
+</full-backup-content>
