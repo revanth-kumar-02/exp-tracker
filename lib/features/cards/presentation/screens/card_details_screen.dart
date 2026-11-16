@@ -9,6 +9,7 @@ import '../../../../core/theme/app_typography.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../budgets/presentation/controllers/budget_controller.dart';
 import '../../data/card_repository.dart';
+import '../../domain/card_enums.dart';
 import '../widgets/credit_card_widget.dart';
 
 class CardDetailsScreen extends ConsumerStatefulWidget {
@@ -29,53 +30,148 @@ class _CardDetailsScreenState extends ConsumerState<CardDetailsScreen> {
     _currentCard = widget.card;
   }
 
-  void _showEditNicknameDialog() {
-    final controller = TextEditingController(text: _currentCard.nickname ?? '');
+  void _showEditCardDialog() {
+    final nicknameController = TextEditingController(text: _currentCard.nickname ?? '');
+    final bankController = TextEditingController(text: _currentCard.bankName);
+    var selectedType = _currentCard.cardType.toUpperCase() == 'CREDIT' ? CardType.credit : CardType.debit;
+
     showDialog(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: const Text('Edit Card Nickname', style: TextStyle(color: Colors.white, fontSize: 16)),
-        content: TextField(
-          controller: controller,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: 'e.g. Shopping Card, Travel Card',
-            hintStyle: const TextStyle(color: AppColors.textMuted),
-            filled: true,
-            fillColor: AppColors.surfaceLight,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: AppColors.surfaceBorder),
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Edit Card Details', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Card Nickname', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: nicknameController,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. Shopping Card, Salary Card',
+                    hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                    filled: true,
+                    fillColor: AppColors.surfaceLight,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppColors.surfaceBorder),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Text('Bank Name', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: bankController,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. HDFC Bank, SBI Bank, ICICI Bank',
+                    hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                    filled: true,
+                    fillColor: AppColors.surfaceLight,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppColors.surfaceBorder),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Text('Card Type', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Debit Card'),
+                      selected: selectedType == CardType.debit,
+                      selectedColor: AppColors.primaryLight,
+                      labelStyle: TextStyle(
+                        color: selectedType == CardType.debit ? Colors.white : AppColors.textMuted,
+                        fontSize: 12,
+                      ),
+                      onSelected: (selected) {
+                        if (selected) setDialogState(() => selectedType = CardType.debit);
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    ChoiceChip(
+                      label: const Text('Credit Card'),
+                      selected: selectedType == CardType.credit,
+                      selectedColor: AppColors.primaryLight,
+                      labelStyle: TextStyle(
+                        color: selectedType == CardType.credit ? Colors.white : AppColors.textMuted,
+                        fontSize: 12,
+                      ),
+                      onSelected: (selected) {
+                        if (selected) setDialogState(() => selectedType = CardType.credit);
+                      },
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-            onPressed: () async {
-              final newName = controller.text.trim();
-              final repo = ref.read(cardRepositoryProvider);
-              await repo.updateCard(
-                id: _currentCard.id,
-                nickname: newName.isEmpty ? _currentCard.bankName : newName,
-              );
-              setState(() {
-                _currentCard = _currentCard.copyWith(
-                  nickname: Value(newName.isEmpty ? _currentCard.bankName : newName),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () async {
+                final newName = nicknameController.text.trim();
+                final newBank = bankController.text.trim().isEmpty ? _currentCard.bankName : bankController.text.trim();
+                final repo = ref.read(cardRepositoryProvider);
+                await repo.updateCard(
+                  id: _currentCard.id,
+                  nickname: newName.isEmpty ? newBank : newName,
+                  bankName: newBank,
+                  cardType: selectedType,
                 );
-              });
-              if (dialogCtx.mounted) Navigator.pop(dialogCtx);
-            },
-            child: const Text('Save', style: TextStyle(color: Colors.white)),
-          ),
-        ],
+                setState(() {
+                  _currentCard = _currentCard.copyWith(
+                    nickname: Value(newName.isEmpty ? newBank : newName),
+                    bankName: newBank,
+                    cardType: selectedType.dbValue,
+                  );
+                });
+                if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+              },
+              child: const Text('Save', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  Future<void> _toggleActiveStatus() async {
+    final newStatus = !_currentCard.isActive;
+    final repo = ref.read(cardRepositoryProvider);
+    await repo.setCardActive(_currentCard.id, newStatus);
+    setState(() {
+      _currentCard = _currentCard.copyWith(isActive: newStatus);
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.surface,
+          content: Text(
+            newStatus ? 'Card activated for expense tracking' : 'Card tracking paused',
+            style: const TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
   }
 
   void _showChangeGradientSheet() {
@@ -142,10 +238,11 @@ class _CardDetailsScreenState extends ConsumerState<CardDetailsScreen> {
       context: context,
       builder: (dialogCtx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: const Text('Remove Card', style: TextStyle(color: Colors.white)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Card', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         content: Text(
-          'Are you sure you want to remove ${_currentCard.nickname ?? _currentCard.bankName} (•••• ${_currentCard.lastFour})? Logged transactions will remain saved.',
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          'Are you sure you want to remove ${_currentCard.nickname ?? _currentCard.bankName} (•••• ${_currentCard.lastFour})?\n\nLogged transactions will be preserved as unassigned records.',
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
         ),
         actions: [
           TextButton(
@@ -153,14 +250,17 @@ class _CardDetailsScreenState extends ConsumerState<CardDetailsScreen> {
             child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.accentError),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.accentError,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
             onPressed: () async {
               final repo = ref.read(cardRepositoryProvider);
               await repo.deleteCard(_currentCard.id);
               if (dialogCtx.mounted) Navigator.pop(dialogCtx);
               if (mounted) context.pop();
             },
-            child: const Text('Remove', style: TextStyle(color: Colors.white)),
+            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -201,7 +301,7 @@ class _CardDetailsScreenState extends ConsumerState<CardDetailsScreen> {
           IconButton(
             icon: const Icon(Icons.delete_outline, color: AppColors.accentError),
             onPressed: _confirmDeleteCard,
-            tooltip: 'Remove Card',
+            tooltip: 'Delete Card',
           ),
         ],
       ),
@@ -216,31 +316,56 @@ class _CardDetailsScreenState extends ConsumerState<CardDetailsScreen> {
               child: SizedBox(
                 width: 320,
                 height: 195,
-                child: CreditCardWidget(
-                  bankName: _currentCard.bankName,
-                  cardType: _currentCard.cardType,
-                  cardNumber: _currentCard.maskedNumber,
-                  network: _currentCard.network,
-                  gradientIndex: _currentCard.colorGradientIndex,
-                  elevation: 12,
+                child: Stack(
+                  children: [
+                    CreditCardWidget(
+                      bankName: _currentCard.bankName,
+                      cardType: _currentCard.cardType,
+                      cardNumber: _currentCard.maskedNumber,
+                      network: _currentCard.network,
+                      gradientIndex: _currentCard.colorGradientIndex,
+                      elevation: 12,
+                    ),
+                    if (!_currentCard.isActive)
+                      Positioned(
+                        top: 14,
+                        left: 14,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.pause_circle_outline, color: Colors.white70, size: 14),
+                              SizedBox(width: 4),
+                              Text('PAUSED', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
 
             const SizedBox(height: 16),
 
-            // 2. Action Chips (Edit Nickname, Change Color)
+            // 2. Action Chips (Edit Details, Change Style, Active Toggle)
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ActionChip(
                   avatar: const Icon(Icons.edit_outlined, size: 16, color: AppColors.primaryLight),
-                  label: const Text('Edit Name', style: TextStyle(fontSize: 12, color: Colors.white)),
+                  label: const Text('Edit Card', style: TextStyle(fontSize: 12, color: Colors.white)),
                   backgroundColor: AppColors.surface,
                   side: const BorderSide(color: AppColors.surfaceBorder),
-                  onPressed: _showEditNicknameDialog,
+                  onPressed: _showEditCardDialog,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 ActionChip(
                   avatar: const Icon(Icons.palette_outlined, size: 16, color: AppColors.primaryLight),
                   label: const Text('Change Style', style: TextStyle(fontSize: 12, color: Colors.white)),
@@ -248,12 +373,79 @@ class _CardDetailsScreenState extends ConsumerState<CardDetailsScreen> {
                   side: const BorderSide(color: AppColors.surfaceBorder),
                   onPressed: _showChangeGradientSheet,
                 ),
+                const SizedBox(width: 10),
+                ActionChip(
+                  avatar: Icon(
+                    _currentCard.isActive ? Icons.check_circle : Icons.pause_circle_filled,
+                    size: 16,
+                    color: _currentCard.isActive ? AppColors.success : AppColors.warning,
+                  ),
+                  label: Text(
+                    _currentCard.isActive ? 'Active' : 'Paused',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _currentCard.isActive ? AppColors.success : AppColors.warning,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  backgroundColor: AppColors.surface,
+                  side: const BorderSide(color: AppColors.surfaceBorder),
+                  onPressed: _toggleActiveStatus,
+                ),
               ],
+            ),
+
+            const SizedBox(height: 22),
+
+            // 3. Card Metadata Summary
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.surfaceBorder, width: 1),
+              ),
+              child: Column(
+                children: [
+                  _MetadataRow(label: 'Bank Name', value: _currentCard.bankName),
+                  const Divider(color: AppColors.surfaceBorder, height: 18),
+                  _MetadataRow(label: 'Classification', value: _currentCard.cardType == 'CREDIT' ? 'Credit Card' : 'Debit Card'),
+                  const Divider(color: AppColors.surfaceBorder, height: 18),
+                  _MetadataRow(label: 'Network', value: _currentCard.network),
+                  const Divider(color: AppColors.surfaceBorder, height: 18),
+                  _MetadataRow(label: 'Account Digits', value: '•••• ${_currentCard.lastFour}'),
+                  const Divider(color: AppColors.surfaceBorder, height: 18),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Auto-Tracking', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                      Row(
+                        children: [
+                          Text(
+                            _currentCard.isActive ? 'Tracking Active' : 'Tracking Paused',
+                            style: TextStyle(
+                              color: _currentCard.isActive ? AppColors.success : AppColors.warning,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Switch.adaptive(
+                            value: _currentCard.isActive,
+                            activeColor: AppColors.primaryAccent,
+                            onChanged: (_) => _toggleActiveStatus(),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
 
             const SizedBox(height: 24),
 
-            // 3. Stats Row (Total Spent, Count, Avg)
+            // 4. Stats Row (Total Spent, Count, Avg)
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -316,7 +508,7 @@ class _CardDetailsScreenState extends ConsumerState<CardDetailsScreen> {
 
             const SizedBox(height: 24),
 
-            // 4. Card Transactions Header
+            // 5. Card Transactions Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -332,7 +524,7 @@ class _CardDetailsScreenState extends ConsumerState<CardDetailsScreen> {
             ),
             const SizedBox(height: 12),
 
-            // 5. Isolated Transactions List
+            // 6. Isolated Transactions List
             if (txs.isEmpty)
               Container(
                 width: double.infinity,
@@ -420,6 +612,24 @@ class _CardDetailsScreenState extends ConsumerState<CardDetailsScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MetadataRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _MetadataRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+      ],
     );
   }
 }

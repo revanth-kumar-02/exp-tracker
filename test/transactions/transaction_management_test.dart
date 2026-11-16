@@ -88,6 +88,15 @@ void main() {
     });
 
     test('Filters transactions by payment card ID', () async {
+      await cardRepo.addCard(
+        id: 'other_card_9999',
+        bankName: 'Axis Bank',
+        cardType: CardType.credit,
+        network: CardNetwork.mastercard,
+        maskedNumber: '•••• •••• •••• 9999',
+        lastFour: '9999',
+      );
+
       await txRepo.addManualTransaction(
         id: 'tx_card_1',
         amountPaise: 50000,

@@ -25,6 +25,12 @@ class CardRepository {
         .watch();
   }
 
+  Stream<List<PaymentCardData>> watchAllCards() {
+    return (_db.select(_db.paymentCards)
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .watch();
+  }
+
   Future<List<PaymentCardData>> getActiveCards() {
     return (_db.select(_db.paymentCards)
           ..where((tbl) => tbl.isActive.equals(true))
@@ -69,21 +75,39 @@ class CardRepository {
   Future<void> updateCard({
     required String id,
     String? nickname,
+    String? bankName,
+    CardType? cardType,
     int? colorGradientIndex,
+    bool? isActive,
   }) async {
     await (_db.update(_db.paymentCards)..where((t) => t.id.equals(id))).write(
       PaymentCardsCompanion(
         nickname: nickname != null ? Value(nickname) : const Value.absent(),
+        bankName: bankName != null ? Value(bankName) : const Value.absent(),
+        cardType: cardType != null ? Value(cardType.dbValue) : const Value.absent(),
         colorGradientIndex: colorGradientIndex != null
             ? Value(colorGradientIndex)
             : const Value.absent(),
+        isActive: isActive != null ? Value(isActive) : const Value.absent(),
       ),
     );
   }
 
-  Future<void> deleteCard(String id) async {
+  Future<void> setCardActive(String id, bool isActive) async {
     await (_db.update(_db.paymentCards)..where((t) => t.id.equals(id))).write(
-      const PaymentCardsCompanion(isActive: Value(false)),
+      PaymentCardsCompanion(isActive: Value(isActive)),
     );
+  }
+
+  Future<void> deleteCard(String id) async {
+    // When deleting a card, unassign foreign key references in transactions first to preserve transaction history
+    await (_db.update(_db.transactions)..where((t) => t.paymentCardId.equals(id))).write(
+      const TransactionsCompanion(
+        paymentCardId: Value(null),
+        matchStatus: Value('UNASSIGNED'),
+      ),
+    );
+    // Delete the card record from database
+    await (_db.delete(_db.paymentCards)..where((t) => t.id.equals(id))).go();
   }
 }

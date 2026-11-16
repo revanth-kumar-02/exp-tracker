@@ -75,5 +75,32 @@ class AppDatabase extends _$AppDatabase {
         ),
       );
     },
+    beforeOpen: (OpeningDetails details) async {
+      await customStatement('PRAGMA foreign_keys = ON');
+
+      // Safe cleanup of legacy demo seed cards from early development builds
+      // Identifies cards created with legacy demo_card_ IDs
+      final allCards = await select(paymentCards).get();
+      final demoCards = allCards.where((c) =>
+        c.id.startsWith('demo_card_') ||
+        c.id == 'demo_card_hdfc' ||
+        c.id == 'demo_card_sbi' ||
+        c.id == 'demo_card_icici'
+      ).toList();
+
+      if (demoCards.isNotEmpty) {
+        for (final card in demoCards) {
+          // Safely unlink any existing transactions linked to demo cards
+          await (update(transactions)..where((t) => t.paymentCardId.equals(card.id))).write(
+            const TransactionsCompanion(
+              paymentCardId: Value(null),
+              matchStatus: Value('UNASSIGNED'),
+            ),
+          );
+          // Delete only known demo cards
+          await (delete(paymentCards)..where((t) => t.id.equals(card.id))).go();
+        }
+      }
+    },
   );
 }

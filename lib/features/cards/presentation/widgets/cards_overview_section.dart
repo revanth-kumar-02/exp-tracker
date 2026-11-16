@@ -14,7 +14,7 @@ class CardsOverviewSection extends StatelessWidget {
   const CardsOverviewSection({
     super.key,
     required this.totalSpentPaise,
-    this.deltaPercent = -12.0,
+    this.deltaPercent = 0.0,
     required this.cards,
     required this.cardSpendMap,
   });
@@ -75,27 +75,35 @@ class CardsOverviewSection extends StatelessWidget {
                         ),
                       ],
                     ),
-                    // Delta Badge (e.g. ↓ 12% vs last month)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.arrow_downward, color: AppColors.success, size: 14),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${deltaPercent.abs().toInt()}% vs last month',
-                            style: const TextStyle(
-                              color: AppColors.success,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
+                    // Delta Badge (e.g. ↓ 12% vs last month or ↑ 8% vs last month)
+                    Builder(
+                      builder: (context) {
+                        final isDecrease = deltaPercent <= 0;
+                        final badgeColor = isDecrease ? AppColors.success : AppColors.warning;
+                        final icon = isDecrease ? Icons.arrow_downward : Icons.arrow_upward;
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: badgeColor.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                        ],
-                      ),
+                          child: Row(
+                            children: [
+                              Icon(icon, color: badgeColor, size: 14),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${deltaPercent.abs().toInt()}% vs last month',
+                                style: TextStyle(
+                                  color: badgeColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -104,7 +112,31 @@ class CardsOverviewSection extends StatelessWidget {
                 // Card-wise Progress List
                 if (cards.isEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.credit_card_off_outlined, color: AppColors.textMuted.withOpacity(0.5), size: 28),
+                          const SizedBox(height: 8),
+                          Text(
+                            'No cards registered yet',
+                            style: AppTypography.bodySmall.copyWith(
+                              color: AppColors.textMuted,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'Add a card above to view per-card spending',
+                            style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (totalSpentPaise == 0)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                     child: Center(
                       child: Text(
                         'No card transactions yet this month',

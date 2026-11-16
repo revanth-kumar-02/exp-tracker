@@ -36,15 +36,12 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // Verify UI branding & headers
+    // Verify UI branding & headers on Home
     expect(find.text('Expense Tracker'), findsOneWidget);
     expect(find.text('Good evening 👋'), findsOneWidget);
-    expect(find.text('Cards Overview'), findsOneWidget);
-
-    // Verify Filter Pills
-    expect(find.text('All Cards (1)'), findsOneWidget);
-    expect(find.text('Debit (1)'), findsOneWidget);
-    expect(find.text('Credit (0)'), findsOneWidget);
+    expect(find.text('Total Spent This Month'), findsOneWidget);
+    expect(find.text('Monthly Budget'), findsOneWidget);
+    expect(find.text('Recent Transactions'), findsOneWidget);
 
     // Verify Quick Actions & Bottom Navigation
     expect(find.text('Add Card'), findsOneWidget);
@@ -57,5 +54,16 @@ void main() {
     expect(find.text('Transactions'), findsOneWidget);
     expect(find.text('Cards'), findsOneWidget);
     expect(find.text('Insights'), findsOneWidget);
+
+    // Switch to Cards tab to verify dedicated Cards Management screen
+    await tester.tap(find.text('Cards'));
+    await tester.pumpAndSettle();
+
+    // Verify CardsScreen elements
+    expect(find.text('Payment Cards'), findsOneWidget);
+    expect(find.text('All Cards (1)'), findsOneWidget);
+    expect(find.text('Debit (1)'), findsOneWidget);
+    expect(find.text('Credit (0)'), findsOneWidget);
+    expect(find.text('Cards Overview'), findsOneWidget);
   });
 }

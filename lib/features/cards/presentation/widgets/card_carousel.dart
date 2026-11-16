@@ -43,47 +43,89 @@ class _CardCarouselState extends State<CardCarousel> {
   @override
   Widget build(BuildContext context) {
     if (widget.cards.isEmpty) {
-      return GestureDetector(
-        onTap: widget.onAddCard,
-        child: Container(
-          height: 190,
-          margin: const EdgeInsets.symmetric(horizontal: 24),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            color: AppColors.surface,
-            border: Border.all(
-              color: AppColors.primaryLight.withOpacity(0.4),
-              width: 1.5,
+      return Container(
+        height: 205,
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          color: AppColors.surface,
+          border: Border.all(
+            color: AppColors.surfaceBorder,
+            width: 1.2,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x1F7C3AED),
+              blurRadius: 16,
+              offset: Offset(0, 4),
             ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primaryGlow,
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primaryLight.withOpacity(0.12),
+                border: Border.all(color: AppColors.primaryLight.withOpacity(0.3), width: 1),
+              ),
+              child: const Icon(Icons.credit_card_outlined, color: AppColors.primaryLight, size: 20),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'No cards added yet',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                letterSpacing: -0.2,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Add your debit or credit card to start tracking your expenses.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.3),
+            ),
+            const SizedBox(height: 12),
+            InkWell(
+              onTap: widget.onAddCard,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x407C3AED),
+                      blurRadius: 8,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
                 ),
-                child: const Icon(Icons.add, color: AppColors.primaryAccent, size: 28),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Add Your First Card',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded, color: Colors.white, size: 18),
+                    SizedBox(width: 6),
+                    Text(
+                      'Add Your First Card',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              const Text(
-                'Debit or Credit for automatic tracking',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     }

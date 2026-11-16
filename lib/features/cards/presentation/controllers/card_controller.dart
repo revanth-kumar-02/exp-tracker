@@ -92,14 +92,24 @@ class DashboardSpendingOverview {
 final dashboardSpendingProvider =
     StreamProvider<DashboardSpendingOverview>((ref) {
   final db = ref.watch(databaseProvider);
+  final cardsAsync = ref.watch(cardsStreamProvider);
+  final activeCards = cardsAsync.asData?.value ?? <PaymentCardData>[];
 
   // Watch transactions and calculate spending
   return db.select(db.transactions).watch().map((transactions) {
     final now = DateTime.now();
-    final startOfMonth = DateTime(now.year, now.month, 1);
+    final startOfCurrentMonth = DateTime(now.year, now.month, 1);
+    final startOfPrevMonth = DateTime(now.year, now.month - 1, 1);
+    final endOfPrevMonth = DateTime(now.year, now.month, 0, 23, 59, 59, 999);
 
     final currentMonthTxs = transactions.where((tx) =>
-      tx.occurredAt.isAfter(startOfMonth) &&
+      tx.occurredAt.isAfter(startOfCurrentMonth) &&
+      tx.transactionType.toUpperCase() == 'DEBIT'
+    ).toList();
+
+    final prevMonthTxs = transactions.where((tx) =>
+      tx.occurredAt.isAfter(startOfPrevMonth) &&
+      tx.occurredAt.isBefore(endOfPrevMonth) &&
       tx.transactionType.toUpperCase() == 'DEBIT'
     ).toList();
 
@@ -114,10 +124,38 @@ final dashboardSpendingProvider =
       }
     }
 
+    int prevTotal = 0;
+    for (final tx in prevMonthTxs) {
+      prevTotal += tx.amountPaise;
+    }
+
+    double monthOverMonthChangePercent = 0.0;
+    if (prevTotal > 0) {
+      monthOverMonthChangePercent = ((totalSpent - prevTotal) / prevTotal) * 100.0;
+    } else if (totalSpent > 0) {
+      monthOverMonthChangePercent = 100.0;
+    }
+
+    final List<CardSpendingMetric> cardMetrics = [];
+    for (final card in activeCards) {
+      final spent = cardSpendMap[card.id] ?? 0;
+      final pct = totalSpent > 0 ? (spent / totalSpent) : 0.0;
+      cardMetrics.add(CardSpendingMetric(
+        cardId: card.id,
+        cardName: card.nickname ?? card.bankName,
+        lastFour: card.lastFour,
+        bankName: card.bankName,
+        cardType: card.cardType,
+        totalSpentPaise: spent,
+        percentageOfTotal: pct,
+        colorGradientIndex: card.colorGradientIndex,
+      ));
+    }
+
     return DashboardSpendingOverview(
       totalSpentPaise: totalSpent,
-      monthOverMonthChangePercent: -12.0, // Default baseline matching UI spec (-12%)
-      cardMetrics: [],
+      monthOverMonthChangePercent: monthOverMonthChangePercent,
+      cardMetrics: cardMetrics,
     );
   });
 });

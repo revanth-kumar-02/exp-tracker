@@ -10,6 +10,7 @@ import '../widgets/quick_actions_grid.dart';
 import '../../../notifications/presentation/widgets/notification_permission_banner.dart';
 import '../../../../core/security/security_controller.dart';
 import '../../../../core/security/security_settings_dialog.dart';
+import '../../../transactions/presentation/controllers/transaction_controller.dart';
 
 class DashboardScreen extends ConsumerWidget {
   final VoidCallback onAddCard;
@@ -111,33 +112,43 @@ class DashboardScreen extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Stack(
-                          children: [
-                            Container(
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                color: AppColors.surface,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: AppColors.surfaceBorder, width: 1),
-                              ),
-                              child: const Center(
-                                child: Icon(Icons.notifications_outlined, color: Colors.white, size: 20),
-                              ),
-                            ),
-                            Positioned(
-                              right: 8,
-                              top: 7,
-                              child: Container(
-                                width: 7,
-                                height: 7,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.redDot,
+                        GestureDetector(
+                          onTap: () {
+                            if (ref.read(unassignedTransactionsCountProvider).asData?.value != null &&
+                                (ref.read(unassignedTransactionsCountProvider).asData?.value ?? 0) > 0) {
+                              ref.read(transactionTabFilterProvider.notifier).setFilter(TransactionTabFilter.needsReview);
+                            }
+                            context.go('/transactions');
+                          },
+                          child: Stack(
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
                                   shape: BoxShape.circle,
+                                  border: Border.all(color: AppColors.surfaceBorder, width: 1),
+                                ),
+                                child: const Center(
+                                  child: Icon(Icons.notifications_outlined, color: Colors.white, size: 20),
                                 ),
                               ),
-                            ),
-                          ],
+                              if ((ref.watch(unassignedTransactionsCountProvider).asData?.value ?? 0) > 0)
+                                Positioned(
+                                  right: 8,
+                                  top: 7,
+                                  child: Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.redDot,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -170,8 +181,8 @@ class DashboardScreen extends ConsumerWidget {
               // 3. Segmented Filter Pills (All Cards, Debit, Credit)
               allCardsAsync.when(
                 data: (allCards) {
-                  final debitCount = allCards.where((c) => c.cardType == 'DEBIT').length;
-                  final creditCount = allCards.where((c) => c.cardType == 'CREDIT').length;
+                  final debitCount = allCards.where((c) => c.cardType.toUpperCase() == 'DEBIT').length;
+                  final creditCount = allCards.where((c) => c.cardType.toUpperCase() == 'CREDIT').length;
 
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -237,21 +248,10 @@ class DashboardScreen extends ConsumerWidget {
                 data: (allCards) {
                   return spendingOverviewAsync.when(
                     data: (overview) {
-                      // Build spend map per card from current transactions
-                      final cardSpendMap = <String, int>{};
-                      // Default simulated card breakdown if no transactions yet for realism
-                      if (overview.totalSpentPaise == 0 && allCards.isNotEmpty) {
-                        return CardsOverviewSection(
-                          totalSpentPaise: 2456000, // ₹24,560 matching reference spec
-                          deltaPercent: -12.0,
-                          cards: allCards,
-                          cardSpendMap: {
-                            if (allCards.isNotEmpty) allCards[0].id: 842000,
-                            if (allCards.length > 1) allCards[1].id: 1230000,
-                            if (allCards.length > 2) allCards[2].id: 384000,
-                          },
-                        );
-                      }
+                      // Build real spend map per card from calculated card metrics
+                      final cardSpendMap = {
+                        for (final m in overview.cardMetrics) m.cardId: m.totalSpentPaise
+                      };
 
                       return CardsOverviewSection(
                         totalSpentPaise: overview.totalSpentPaise,

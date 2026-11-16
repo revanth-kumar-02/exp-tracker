@@ -4,7 +4,8 @@ import '../core/database/app_database.dart';
 import '../features/cards/presentation/screens/add_card_screen.dart';
 import '../features/cards/presentation/screens/card_bills_screen.dart';
 import '../features/cards/presentation/screens/card_details_screen.dart';
-import '../features/cards/presentation/screens/dashboard_screen.dart';
+import '../features/cards/presentation/screens/cards_screen.dart';
+import '../features/cards/presentation/screens/home_screen.dart';
 import '../features/transactions/presentation/screens/transactions_screen.dart';
 import '../features/budgets/presentation/screens/budgets_screen.dart';
 import '../features/insights/presentation/screens/insights_screen.dart';
@@ -35,12 +36,27 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/',
-              builder: (context, state) => DashboardScreen(
+              builder: (context, state) => HomeScreen(
                 onAddCard: () => context.push('/add-card'),
                 onBudgets: () => context.go('/budgets'),
                 onAnalytics: () => context.go('/insights'),
                 onCardBills: () => context.push('/card-bills'),
+                onViewCards: () => context.go('/cards'),
+                onViewTransactions: () => context.go('/transactions'),
               ),
+              routes: [
+                GoRoute(
+                  path: 'home',
+                  builder: (context, state) => HomeScreen(
+                    onAddCard: () => context.push('/add-card'),
+                    onBudgets: () => context.go('/budgets'),
+                    onAnalytics: () => context.go('/insights'),
+                    onCardBills: () => context.push('/card-bills'),
+                    onViewCards: () => context.go('/cards'),
+                    onViewTransactions: () => context.go('/transactions'),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -60,11 +76,8 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/cards',
-              builder: (context, state) => DashboardScreen(
+              builder: (context, state) => CardsScreen(
                 onAddCard: () => context.push('/add-card'),
-                onBudgets: () => context.go('/budgets'),
-                onAnalytics: () => context.go('/insights'),
-                onCardBills: () => context.push('/card-bills'),
               ),
             ),
           ],
